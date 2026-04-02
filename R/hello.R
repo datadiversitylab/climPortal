@@ -16,3 +16,5 @@
 hello <- function() {
   print("Helloo, world!")
 }
+
+#create_package("/Users/ndabagia/Desktop/Programming/climPortal/climPortal")
