@@ -8,155 +8,144 @@
 #' @export
 #'
 #' @examples
-get_cru <- function(pre=FALSE, tmp=FALSE, rdO=FALSE, dtr=FALSE, reh=FALSE,
-                    sunp=FALSE, frs=FALSE, wnd=FALSE, elv=FALSE) {
-  if(pre == TRUE){
-    url_path <- "https://crudata.uea.ac.uk/cru/data/hrg/tmc/grid_10min_pre.dat.gz"
 
-    con <- gzcon(url(url_path, open = "rb"))
-    on.exit(close(con))
+# VARIABLES THAT I SHOULD FOCUS ON
 
-    df <- read.table(con, header = FALSE)
-    df
-  }else()
-  if(tmp == TRUE){
-    url_path <- "https://crudata.uea.ac.uk/cru/data/hrg/tmc/grid_10min_tmp.dat.gz"
+#cru_avgtemp <- nc_open("cru_ts3.22.1901.2013.tmp.dat.nc")
+#cru_mintemp <- nc_open("cru_ts3.22.1901.2013.tmn.dat.nc")
+#cru_maxtemp <- nc_open("cru_ts3.22.1901.2013.tmx.dat.nc")
+#cru_prec <- nc_open("cru_ts3.22.1901.2013.pre.dat.nc")
 
-    con <- gzcon(url(url_path, open = "rb"))
-    on.exit(close(con))
+# temp
+#url
+#"https://crudata.uea.ac.uk/cru/data/hrg/cru_ts_4.09/cruts.2503051245.v4.09/tmp/cru_ts4.09.1901.2024.tmp.dat.nc.gz"
+# precip
+#https://crudata.uea.ac.uk/cru/data/hrg/cru_ts_4.09/cruts.2503051245.v4.09/pre/cru_ts4.09.1901.2024.pre.dat.nc.gz
+# temp max - monthly average daily maximum temperature
+#https://crudata.uea.ac.uk/cru/data/hrg/cru_ts_4.09/cruts.2503051245.v4.09/tmx/cru_ts4.09.1901.2024.tmx.dat.nc.gz
+# temp min - monthly average daily minimum temperature
+#https://crudata.uea.ac.uk/cru/data/hrg/cru_ts_4.09/cruts.2503051245.v4.09/tmn/cru_ts4.09.1901.2024.tmn.dat.nc.gz
 
-    df <- read.table(con, header = FALSE)
-    df
-  }else()
-  if(rdO == TRUE){
-    url_path <- "https://crudata.uea.ac.uk/cru/data/hrg/tmc/grid_10min_rd0.dat.gz"
+######
+#### draft 3
 
-    con <- gzcon(url(url_path, open = "rb"))
-    on.exit(close(con))
+# if you want the data I was testing with
+#"https://crudata.uea.ac.uk/cru/data/hrg/cru_ts_4.09/cruts.2503051245.v4.09/pre/cru_ts4.09.1901.1910.pre.dat.nc.gz"
 
-    df <- read.table(con, header = FALSE)
-    df
-  }else()
-  if(dtr == TRUE){
-    url_path <- "https://crudata.uea.ac.uk/cru/data/hrg/tmc/grid_10min_dtr.dat.gz"
 
-    con <- gzcon(url(url_path, open = "rb"))
-    on.exit(close(con))
+precip <- nc_open("cru_ts4.09.1901.1910.pre.dat.nc")
+# this list of lists structure is mindboggling
+# how do I get just the values and the months/years?
 
-    df <- read.table(con, header = FALSE)
-    df
-  }else()
-  if(reh == TRUE){
-    url_path <- "https://crudata.uea.ac.uk/cru/data/hrg/tmc/grid_10min_reh.dat.gz"
+# function that might work but the data are so huge that it times out
 
-    con <- gzcon(url(url_path, open = "rb"))
-    on.exit(close(con))
+library(ncdf4)
+library(R.utils)
 
-    df <- read.table(con, header = FALSE)
-    df
-  }else()
-  if(sunp == TRUE){
-    url_path <- "https://crudata.uea.ac.uk/cru/data/hrg/tmc/grid_10min_sunp.dat.gz"
-
-    con <- gzcon(url(url_path, open = "rb"))
-    on.exit(close(con))
-
-    df <- read.table(con, header = FALSE)
-    df
-  }else()
-  if(frs == TRUE){
-    url_path <- "https://crudata.uea.ac.uk/cru/data/hrg/tmc/grid_10min_frs.dat.gz"
-
-    con <- gzcon(url(url_path, open = "rb"))
-    on.exit(close(con))
-
-    df <- read.table(con, header = FALSE)
-    df
-  }else()
-  if(wnd == TRUE){
-    url_path <- "https://crudata.uea.ac.uk/cru/data/hrg/tmc/grid_10min_wnd.dat.gz"
-
-    con <- gzcon(url(url_path, open = "rb"))
-    on.exit(close(con))
-
-    df <- read.table(con, header = FALSE)
-    df
-  }else()
-  if(wnd == TRUE){
-    url_path <- "https://crudata.uea.ac.uk/cru/data/hrg/tmc/grid_10min_elv.dat.gz"
-
-    con <- gzcon(url(url_path, open = "rb"))
-    on.exit(close(con))
-
-    df <- read.table(con, header = FALSE)
-    df
-  }else()
-
-}
-
-# different approach, needs testing
-
-get_cru <- function(pre = FALSE, tmp = FALSE, rdO = FALSE, dtr = FALSE,
-                    reh = FALSE, sunp = FALSE, frs = FALSE, wnd = FALSE,
-                    elv = FALSE) {
+get_cru <- function(temp = FALSE, pre = FALSE, tmin = FALSE, tmax = FALSE) { # four variables to focus on
 
   var_map <- list(
-    pre  = "pre",
-    tmp  = "tmp",
-    rdO  = "rd0",
-    dtr  = "dtr",
-    reh  = "reh",
-    sunp = "sunp",
-    frs  = "frs",
-    wnd  = "wnd",
-    elv  = "elv"
+    temp = list(
+      url      = "https://crudata.uea.ac.uk/cru/data/hrg/cru_ts_4.09/cruts.2503051245.v4.09/tmp/cru_ts4.09.1901.2024.tmp.dat.nc.gz",
+      var_name = "tmp"
+    ),
+    pre = list(
+      url      = "https://crudata.uea.ac.uk/cru/data/hrg/cru_ts_4.09/cruts.2503051245.v4.09/pre/cru_ts4.09.1901.2024.pre.dat.nc.gz",
+      var_name = "pre"
+    ),
+    tmax = list(
+      url      = "https://crudata.uea.ac.uk/cru/data/hrg/cru_ts_4.09/cruts.2503051245.v4.09/tmx/cru_ts4.09.1901.2024.tmx.dat.nc.gz",
+      var_name = "tmx"
+    ),
+    tmin = list(
+      url      = "https://crudata.uea.ac.uk/cru/data/hrg/cru_ts_4.09/cruts.2503051245.v4.09/tmn/cru_ts4.09.1901.2024.tmn.dat.nc.gz",
+      var_name = "tmn"
+    )
   )
 
-  base_url <- "https://crudata.uea.ac.uk/cru/data/hrg/tmc/grid_10min_%s.dat.gz"
-
-  requested <- list(pre = pre, tmp = tmp, rdO = rdO, dtr = dtr,
-                    reh = reh, sunp = sunp, frs = frs, wnd = wnd,
-                    elv = elv)
-
-  selected <- names(Filter(isTRUE, requested))
+  # Collect requested variables
+  requested <- list(temp = temp, pre = pre, tmin = tmin, tmax = tmax)
+  selected  <- names(Filter(isTRUE, requested))
 
   if (length(selected) == 0) {
     stop("No variables requested. Set at least one argument to TRUE.", call. = FALSE)
   }
 
-  fetch_var <- function(var_name) {
-    slug <- var_map[[var_name]]
-    url_path <- sprintf(base_url, slug)
+  # Increase timeout for large file downloads since I think the earlier error was from timing out
+  # and restore the user's default on exit -- this is the solution from Claude
+  old_timeout <- getOption("timeout")
+  options(timeout = 3600)  # 1 hour
+  on.exit(options(timeout = old_timeout), add = TRUE)
 
-    message(sprintf("Fetching %s ...", var_name))
+  fetch_var <- function(arg_name) {
+    meta     <- var_map[[arg_name]]
+    url_path <- meta$url
+    var_name <- meta$var_name
 
-    tryCatch({
-      con <- gzcon(url(url_path, open = "rb"))
-      on.exit(close(con), add = TRUE)
-      df <- read.table(con, header = FALSE)
-      # Name all columns after the variable (e.g. pre_V1, pre_V2, ...)
-      colnames(df) <- paste0(var_name, "_", colnames(df))
-      df
-    }, error = function(e) {
-      warning(sprintf("Failed to fetch '%s': %s", var_name, e$message), call. = FALSE)
-      NULL
-    })
+    tmp_gz <- tempfile(fileext = ".nc.gz")
+    tmp_nc <- tempfile(fileext = ".nc")
+
+    on.exit({
+      unlink(tmp_gz)
+      unlink(tmp_nc)
+    }, add = TRUE)
+
+    message(sprintf("Downloading %s (this may take several minutes) ...", arg_name))
+    tryCatch(
+      download.file(url_path, destfile = tmp_gz, mode = "wb", quiet = FALSE),
+      error = function(e) stop(sprintf("Download failed for '%s': %s", arg_name, e$message), call. = FALSE)
+    )
+
+    message(sprintf("Decompressing %s ...", arg_name))
+    R.utils::gunzip(tmp_gz, destname = tmp_nc, overwrite = TRUE, remove = FALSE)
+
+    message(sprintf("Reading %s ...", arg_name))
+    nc <- ncdf4::nc_open(tmp_nc)
+    on.exit(ncdf4::nc_close(nc), add = TRUE)
+
+    lon  <- ncdf4::ncvar_get(nc, "lon")
+    lat  <- ncdf4::ncvar_get(nc, "lat")
+    month <- ncdf4::ncvar_get(nc, "month")
+    vals <- ncdf4::ncvar_get(nc, var_name)
+
+    expand.grid(lon = lon, lat = lat, month = month) |>
+      transform(value = as.vector(vals)) |>
+      setNames(c("lon", "lat", "time", arg_name))
   }
 
-  # Fetch all requested variables
-  results <- lapply(selected, fetch_var)
+  results <- lapply(selected, fetch_var) # use the helper function to bring the selected variables together
   names(results) <- selected
 
-  # Drop any NULLs from failed fetches
-  results <- Filter(Negate(is.null), results)
-
-  if (length(results) == 0) {
-    stop("All variable fetches failed.", call. = FALSE)
-  }
-
-  # Bind all dataframes column-wise into one
-  do.call(cbind, results)
+  Reduce(function(a, b) merge(a, b, by = c("lon", "lat", "month")), results)
 }
+
+df <- get_cru(temp=TRUE)
+
+###############
+
+##### primitive below this line
+
+
+# pseudo code I may come back to
+# downloading
+
+# use download.file to access the data
+
+# evaluate where the trues are and replace the existing if else structure
+
+todo <- c("") # vector of the names of the trues in the argument call
+
+for(i in todo){
+  download.file(...)
+
+}
+###. END DOWNLOADING
+### READING
+files <- list.files(...) # where extension is .dat.nc, use regex passed to the pattern argument in list.files
+for(i in files){
+  nc_open()
+}
+########### end READING
 
 # run document() or command + shift + D to check that the documentation is working properly
 # remember that you need values for @param, @returns, @export, @examples
@@ -167,3 +156,6 @@ get_cru <- function(pre = FALSE, tmp = FALSE, rdO = FALSE, dtr = FALSE,
 library(getCRUCLdata)
 
 t <- get_CRU_df(tmp = TRUE, pre = TRUE, tmx = TRUE)
+
+
+# let the user decide to download
