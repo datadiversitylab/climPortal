@@ -2,7 +2,8 @@
 #
 #' Access environmental data from the CRU repository
 #'
-#' @param x
+#' @param temp XX
+#' @param tmin YY
 #'
 #' @returns
 #' @export
@@ -42,7 +43,23 @@ precip <- nc_open("cru_ts4.09.1901.1910.pre.dat.nc")
 library(ncdf4)
 library(R.utils)
 
-get_cru <- function(temp = FALSE, pre = FALSE, tmin = FALSE, tmax = FALSE) { # four variables to focus on
+get_cru <- function(temp = FALSE,
+                    tmin = FALSE,
+                    tmax = FALSE,
+                    pre = FALSE,
+                    start_year = 1901,
+                    end_year = 2024) {
+
+  # Validate year range
+  if (!is.numeric(start_year) || !is.numeric(end_year)) {
+    stop("`start_year` and `end_year` must be numeric.", call. = FALSE)
+  }
+  if (start_year > end_year) {
+    stop("`start_year` must be <= `end_year`.", call. = FALSE)
+  }
+  if (start_year < 1901 || end_year > 2024) {
+    stop("Year range must be within 1901-2024 for CRU TS 4.09.", call. = FALSE)
+  }
 
   var_map <- list(
     temp = list(
@@ -84,17 +101,38 @@ get_cru <- function(temp = FALSE, pre = FALSE, tmin = FALSE, tmax = FALSE) { # f
 
     tmp_gz <- tempfile(fileext = ".nc.gz")
     tmp_nc <- tempfile(fileext = ".nc")
-
     on.exit({
       unlink(tmp_gz)
       unlink(tmp_nc)
     }, add = TRUE)
 
     message(sprintf("Downloading %s (this may take several minutes) ...", arg_name))
-    tryCatch(
-      download.file(url_path, destfile = tmp_gz, mode = "wb", quiet = FALSE),
-      error = function(e) stop(sprintf("Download failed for '%s': %s", arg_name, e$message), call. = FALSE)
+
+    h <- curl::new_handle(
+      connecttimeout = 60,
+      low_speed_limit = 1000,
+      low_speed_time  = 300
     )
+
+    dl_ok <- tryCatch(
+      {
+        curl::curl_download(url_path, destfile = tmp_gz, handle = h, quiet = FALSE)
+        TRUE
+      },
+      error = function(e) {
+        message(sprintf("Download failed for '%s': %s", arg_name, e$message))
+        FALSE
+      }
+    )
+
+    if (!dl_ok) return(invisible(NULL))
+
+    # Verify the file isn't truncated
+    if (file.size(tmp_gz) < 1e6) {
+      message(sprintf("Downloaded file for '%s' appears truncated (%s bytes). Skipping.",
+                      arg_name, file.size(tmp_gz)))
+      return(invisible(NULL))
+    }
 
     message(sprintf("Decompressing %s ...", arg_name))
     R.utils::gunzip(tmp_gz, destname = tmp_nc, overwrite = TRUE, remove = FALSE)
@@ -105,14 +143,23 @@ get_cru <- function(temp = FALSE, pre = FALSE, tmin = FALSE, tmax = FALSE) { # f
 
     lon  <- ncdf4::ncvar_get(nc, "lon")
     lat  <- ncdf4::ncvar_get(nc, "lat")
-    month <- ncdf4::ncvar_get(nc, "month")
+    time <- ncdf4::ncvar_get(nc, "time")
     vals <- ncdf4::ncvar_get(nc, var_name)
 
-    expand.grid(lon = lon, lat = lat, month = month) |>
+    # Build data frame
+    df <- expand.grid(lon = lon, lat = lat, time = time) |>
       transform(value = as.vector(vals)) |>
       setNames(c("lon", "lat", "time", arg_name))
-  }
 
+    # -- Year filtering ----------------------------------------------------
+    # CRU TS time is "days since 1900-01-01"; convert to year
+    origin <- as.Date("1900-01-01")
+    df$year <- as.integer(format(origin + df$time, "%Y"))
+    df <- df[df$year >= start_year & df$year <= end_year, ]
+    df$year <- NULL
+
+    df
+  }
   results <- lapply(selected, fetch_var) # use the helper function to bring the selected variables together
   names(results) <- selected
 
