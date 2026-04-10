@@ -42,6 +42,7 @@ precip <- nc_open("cru_ts4.09.1901.1910.pre.dat.nc")
 
 library(ncdf4)
 library(R.utils)
+library(curl)
 
 get_cru <- function(temp = FALSE,
                     tmin = FALSE,
