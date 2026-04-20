@@ -33,9 +33,9 @@ library(ncdf4)
 library(CFtime)
 library(R.utils)
 library(curl)
-library(tidyverse)
+#library(tidyverse)
 
-get_cru <- function(tmp = FALSE,
+get_cru <- function(tmp = TRUE,
                     tmn = FALSE,
                     tmx = FALSE,
                     pre = FALSE,
@@ -170,41 +170,45 @@ get_cru <- function(tmp = FALSE,
 
     # get variable array and fill value
     var_array <- ncdf4::ncvar_get(nc, var_name)
-    fillvalue <- ncdf4::ncatt_get(nc, var_name, "_FillValue")
 
-    # replace fill values with NA
-    var_array[var_array == fillvalue$value] <- NA
-
-    # subset array to requested years along time dimension
+    # Subset to requested years
     var_array <- var_array[, , year_mask]
 
-    # reshape to long data frame
-    var_vec_long <- as.vector(var_array)
-    var_mat      <- matrix(var_vec_long, nrow = nlon * nlat, ncol = sum(year_mask))
-
-    lonlat   <- as.matrix(expand.grid(lon, lat))
-    var_df   <- data.frame(cbind(lonlat, var_mat))
-
-    time_labels    <- paste0(month_abbrevs[time_cf$month], time_cf$year)
-    names(var_df)  <- c("lon", "lat", time_labels)
-
-    # pivot long
-    var_df_long <- var_df |>
-      pivot_longer(
-        cols      = -c(lon, lat),
-        names_to  = "time",
-        values_to = arg_name       # column named after the variable, e.g. "pre", "tmp"
-      ) |>
-      select(lon, lat, time, all_of(arg_name))
-
-    var_df_long
+    # To long
+    time_labels <- paste0(month_abbrevs[time_cf$month], time_cf$year)
+    grid <- expand.grid(
+      lon  = lon,
+      lat  = lat,
+      time = time_labels,
+      stringsAsFactors = FALSE
+    )
+    grid[[arg_name]] <- as.vector(var_array)
+    #all(is.na(grid[["tmp"]])) #Check that not all of them are NAs
+    grid
   }
 
-  results       <- lapply(selected, fetch_var)
-  names(results) <- selected
+  results <- lapply(selected, fetch_var)
+  results <- Filter(Negate(is.null), results)
 
-  Reduce(function(a, b) merge(a, b, by = c("lon", "lat", "time")), results)
+  if (length(results) == 0) {
+    message("All downloads failed.")
+    return(invisible(NULL))
+  }
+
+  # All grids share lon/lat/time. Use the skeleton from the first,
+  # then bind only the value columns from the rest
+  out <- results[[1]]
+  if (length(results) > 1) {
+    for (i in seq(2, length(results))) {
+      out[[selected[i]]] <- results[[i]][[selected[i]]]
+    }
+  }
+
+  return(out)
 }
+
+
+test1 <- get_cru(tmp = TRUE, pre = TRUE)
 
 ###############
 
