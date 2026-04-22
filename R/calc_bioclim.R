@@ -1,113 +1,56 @@
-# calc_bioclim() script
-#
-#' Calculate bioClim variables from CRU data
+#'@description calculates the 19 bioClim variables from monthly climate data, either a dataframe or
+#'SpatRasters
+#' @param data Tidy data frame output from get_cru function, MUST contain at least CRU variables
+#' 'pre', tmn' and 'tmx'. User may also provide similar data in SpatRaster format.
 #'
-#'@description
-#' @param monthly_df Tidy data frame output from get_cru function, MUST contain at least CRU variables
-#' 'tmp', 'pre', perhaps 'tmn' and 'tmx', potentially 'dtr' if we subtitute these values from the dataset
-#' instead of calculating them from 'tmp'.
-#'
-#' @returns
-#' @export
-#'
+#' @returns 19 bioclimatic variables.
+#' @value
+#' Same class as input, but 19 values/variables
+#' bio1 = Mean annual temperature
+#' bio2 = Mean diurnal range (mean of max temp - min temp)
+#' bio3 = Isothermality (bio2/bio7) (* 100)
+#' bio4 = Temperature seasonality (standard deviation *100)
+#' bio5 = Max temperature of warmest month
+#' bio6 = Min temperature of coldest month
+#' bio7 = Temperature annual range (bio5-bio6)
+#' bio8 = Mean temperature of the wettest quarter
+#' bio9 = Mean temperature of driest quarter
+#' bio10 = Mean temperature of warmest quarter
+#' bio11 = Mean temperature of coldest quarter
+#' bio12 = Total (annual) precipitation
+#' bio13 = Precipitation of wettest month
+#' bio14 = Precipitation of driest month
+#' bio15 = Precipitation seasonality (coefficient of variation)
+#' bio16 = Precipitation of wettest quarter
+#' bio17 = Precipitation of driest quarter
+#' bio18 = Precipitation of warmest quarter
+#' bio19 = Precipitation of the colder quarter
 #' @examples
-
-
-# set path and filename
-ncpath <- "/Users/ndabagia/Desktop/Programming/data/"
-ncname <- "cru_ts4.09.1901.1910.pre.dat"
-ncfname <- paste(ncpath, ncname, ".nc", sep="")
-dname <- "pre"  # arg? # note: tmp means temperature (not temporary)
-# read in and print the data
-ncin <- nc_open(ncfname)
-print(ncin)
-# # get longitude and latitude
-lon <- ncvar_get(ncin,"lon")
-nlon <- dim(lon)
-head(lon)
-lat <- ncvar_get(ncin,"lat")
-nlat <- dim(lat)
-head(lat)
-# get time
-time <- ncvar_get(ncin,"time")
-time
-# get time units
-tunits <- ncatt_get(ncin,"time","units")
-tunits
-nt <- dim(time)
-nt
-# get precip
-pre_array <- ncvar_get(ncin,dname)
-dlname <- ncatt_get(ncin,dname,"long_name")
-dunits <- ncatt_get(ncin,dname,"units")
-fillvalue <- ncatt_get(ncin,dname,"_FillValue")
-dim(pre_array)
-# get global attributes
-title <- ncatt_get(ncin,0,"title")
-institution <- ncatt_get(ncin,0,"institution")
-datasource <- ncatt_get(ncin,0,"source")
-references <- ncatt_get(ncin,0,"references")
-history <- ncatt_get(ncin,0,"history")
-Conventions <- ncatt_get(ncin,0,"Conventions")
-nc_close(ncin) # close nc connection
-#####
-# decode time
-cf <- CFtime(tunits$value, calendar = "proleptic_gregorian", time) # convert time to CFtime class
-cf
-timestamps <- as_timestamp(cf) # get character-string times
-timestamps # characters, but we want actual dates
-# do that here
-time_cf <- parse_timestamps(cf, timestamps) # parse the string into date components
-time_cf
-
-# # replace netCDF fill values with NA's
-pre_array[pre_array==fillvalue$value] <- NA
-# check that it worked
-# head(as.vector(pre_array[,,1])) and it did
-length(na.omit(as.vector(pre_array[,,1])))
-
-####################
-# do the whole thing, i.e. reshape the whole matrix into a 2x2 df
-
-pre_vec_long <- as.vector(pre_array)
-# reshape the vector into a matrix
-pre_mat <- matrix(pre_vec_long, nrow=nlon*nlat, ncol=nt)
-dim(pre_mat)
-head(na.omit(pre_mat))
-
-# create a dataframe
-lonlat <- as.matrix(expand.grid(lon, lat))
-pre_df02 <- data.frame(cbind(lonlat, pre_mat))
-
-# dynamically generate column names from time_cf year and month columns
-month_abbrevs <- c("Jan","Feb","Mar","Apr","May","Jun",
-                   "Jul","Aug","Sep","Oct","Nov","Dec")
-
-time_labels <- paste0(month_abbrevs[time_cf$month], time_cf$year)
-names(pre_df02) <- c("lon", "lat", time_labels)
-
-head(na.omit(pre_df02), 20)
-
-# pivot long
-pre_df_long <- pre_df02 |>
-  pivot_longer(
-    cols      = -c(lon, lat),
-    names_to  = "time",
-    values_to = "pre"
-  ) |>
-  select(lon, lat, time, pre)
-
-head(na.omit(pre_df_long), 20)
-
-pre_df_long
-calc_bioclim <- function(x){
-  x <- x
-}
+#' tmin <- c(10,12,14,16,18,20,22,21,19,17,15,12)
+#' tmax <- tmin + 5
+#' prec <- c(0,2,10,30,80,160,80,20,40,60,20,0)
+#' biovars(prec, tmin, tmax)
+#' tmn <- tmx <- prc <- rast(nrow=1, ncol=1, nlyr=12)
+#' values(tmn) <- t(matrix(c(10,12,14,16,18,20,22,21,19,17,15,12)))
+#' tmx <- tmn + 5
+#' values(prc) <- t(matrix(c(0,2,10,30,80,160,80,20,40,60,20,0)))
+#' b <- biovars(prc, tmn, tmx)
+#' as.matrix(b)
 
 ###################################
 ########## Calc BioClim Vars ######
 ###################################
-
+calc_bioclim <- function(data){
+  library(predicts) # uses predicts :: biovars to do the heavy lifting
+  prec <- data$pre
+  tmin <- data$tmn
+  tmax <- data$tmx
+  bioclims <- biovars(prec = prec, tmin = tmin, tmax=tmax)
+  return(bioclims)
+}
+#################################################
+###### Cristian's code to do the same as biovars()
+#################################################
 
 ##Create Worldclim variables
 calc_bioclim<-function(monthly_df){
