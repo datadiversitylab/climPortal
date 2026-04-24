@@ -1,8 +1,10 @@
 #'@description calculates the 19 bioClim variables from monthly climate data, either a dataframe or
-#'SpatRasters
+#'SpatRasters.
 #' @param data Tidy data frame output from get_cru function, MUST contain at least CRU variables
 #' 'pre', tmn' and 'tmx'. User may also provide similar data in SpatRaster format.
-#'
+#' @param start_year Year, contained in the data, that the user wants to start calculating
+#' bioclimatic variables from.
+#' @param end_year Year where the user wants the calculation to stop.
 #' @returns 19 bioclimatic variables.
 #' @value
 #' Same class as input, but 19 values/variables
@@ -40,14 +42,113 @@
 ###################################
 ########## Calc BioClim Vars ######
 ###################################
-calc_bioclim <- function(data){
-  library(predicts) # uses predicts :: biovars to do the heavy lifting
-  prec <- data$pre
-  tmin <- data$tmn
-  tmax <- data$tmx
-  bioclims <- biovars(prec = prec, tmin = tmin, tmax=tmax)
+calc_bioclim <- function(data, start_year, end_year){
+  library(predicts)
+
+  # Extract year from the "time" column explicit in the get_cru output, ex: Jan2005
+  year_index <- as.integer(substr(data$time, 4, 7))
+
+  # --- Input validation ---
+
+  if(start_year > end_year){
+    stop("start_year must be less than end_year.")
+  }
+
+  data_start <- min(year_index)
+  data_end   <- max(year_index)
+
+  if(start_year < data_start | start_year > data_end){
+    stop(paste("start_year", start_year, "is outside the range of the data (", data_start, "to", data_end, ")."))
+  }
+
+  if(end_year < data_start | end_year > data_end){
+    stop(paste("end_year", end_year, "is outside the range of the data (", data_start, "to", data_end, ")."))
+  }
+
+  # --- Filter and summarize ---
+
+  year_mask <- year_index >= start_year & year_index <= end_year
+
+  prec <- data$pre[year_mask]
+  tmin <- data$tmn[year_mask]
+  tmax <- data$tmx[year_mask]
+
+  if(length(prec) > 12 | length(tmin) > 12 | length(tmax) > 12){
+    month_index <- ((seq_along(prec) - 1) %% 12) + 1
+
+    prec <- tapply(prec, month_index, mean, na.rm = TRUE)
+    tmin <- tapply(tmin, month_index, mean, na.rm = TRUE)
+    tmax <- tapply(tmax, month_index, mean, na.rm = TRUE)
+  }
+
+  bioclims <- biovars(prec = prec, tmin = tmin, tmax = tmax)
   return(bioclims)
 }
+
+# #########
+# # testing
+# #########
+#
+# library(testthat)
+#
+# # --- Helper: generate synthetic monthly data ---
+# make_data <- function(start_year, end_year){
+#   n_months <- (end_year - start_year + 1) * 12
+#   month_abbrevs <- c("Jan","Feb","Mar","Apr","May","Jun",
+#                      "Jul","Aug","Sep","Oct","Nov","Dec")
+#   years  <- rep(start_year:end_year, each = 12)
+#   months <- rep(month_abbrevs, times = end_year - start_year + 1)
+#    tibble(
+#     time = paste0(months, years),
+#     pre  = runif(n_months, min = 0,   max = 200),
+#     tmn  = runif(n_months, min = -10, max = 10),
+#     tmx  = runif(n_months, min = 10,  max = 40)
+#   )
+# }
+#
+# # --- Tests ---
+#
+# test_that("function runs successfully with a single year of data", {
+#   data <- make_data(2000, 2000)
+#   result <- calc_bioclim(data, start_year = 2000, end_year = 2000)
+#   expect_false(is.null(result))
+# })
+#
+# test_that("function runs successfully with multiple years of data", {
+#   data <- make_data(2000, 2010)
+#   result <- calc_bioclim(data, start_year = 2000, end_year = 2010)
+#   expect_false(is.null(result))
+# })
+#
+# test_that("function runs successfully when subsetting years within the data", {
+#   data <- make_data(2000, 2010)
+#   result <- calc_bioclim(data, start_year = 2003, end_year = 2007)
+#   expect_false(is.null(result))
+# })
+#
+# test_that("stop if start_year is greater than end_year", {
+#   data <- make_data(2000, 2010)
+#   expect_error(
+#     calc_bioclim(data, start_year = 2010, end_year = 2000),
+#     "start_year must be less than end_year"
+#   )
+# })
+#
+# test_that("stop if start_year is outside the data range", {
+#   data <- make_data(2000, 2010)
+#   expect_error(
+#     calc_bioclim(data, start_year = 1990, end_year = 2005),
+#     "start_year 1990 is outside the range of the data"
+#   )
+# })
+#
+# test_that("stop if end_year is outside the data range", {
+#   data <- make_data(2000, 2010)
+#   expect_error(
+#     calc_bioclim(data, start_year = 2000, end_year = 2020),
+#     "end_year 2020 is outside the range of the data"
+#   )
+# })
 #################################################
 ###### Cristian's code to do the same as biovars()
 #################################################
