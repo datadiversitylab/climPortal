@@ -23,6 +23,8 @@
 #' @returns A tidy dataframe with the requested data from the \acronym{CRU} v. 4.09 repository. If no data are requested, the user
 #' will be prompted to set at least one argument to TRUE.
 #'
+#' @export
+#'
 #' @examples
 #' \donttest{
 #' # Download data and create a data frame of precipitation and temperature
@@ -36,11 +38,6 @@
 #' }
 #'
 #'
-
-library(ncdf4)
-library(CFtime)
-library(R.utils)
-library(curl)
 
 get_cru <- function(tmp = TRUE,
                     tmn = FALSE,

@@ -43,7 +43,6 @@
 ########## Calc BioClim Vars ######
 ###################################
 calc_bioclim <- function(data, start_year, end_year){
-  library(predicts)
 
   # Extract year from the "time" column explicit in the get_cru output, ex: Jan2005
   year_index <- as.integer(substr(data$time, 4, 7))

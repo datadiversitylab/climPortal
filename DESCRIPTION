@@ -12,6 +12,7 @@ Authors@R: c(
 Description: More about what it does (maybe more than one line).
     Continuation lines should be indented.
 License: What license is it under?
+Imports: ncdf4, CFtime, R.utils, curl, predicts
 Encoding: UTF-8
 LazyData: true
 URL: https://github.com/dabagia/climPortal
