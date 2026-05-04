@@ -2,13 +2,15 @@
 % Please edit documentation in R/validate_downscale.R
 \name{validate_downscale}
 \alias{validate_downscale}
-\title{Title}
+\title{validate_downscale() script
+Title}
 \usage{
 validate_downscale(x)
 }
 \arguments{
-\item{x}{}
+\item{x}{TBD}
 }
 \description{
+validate_downscale() script
 Title
 }

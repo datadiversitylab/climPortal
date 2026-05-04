@@ -1,3 +1,4 @@
+#' down
 #' @description
 #' Access time series \acronym{TS} environmental data from the \acronym{CRU} repository.
 #' For more information see the description of the data provided by
@@ -16,9 +17,6 @@
 #' @param end_year Numeric. Define end year for fetched data. Defaults to \code{2024}.
 #' @param output Define if tabular data "tabular" or raster stack output "rasters" is the desired output.
 #' Defaults to 'rasters'.
-#' to
-#' @param version Numeric. Define version of \acronym{CRU} data to fetch, 4.09 is current as of April 2026.
-#' Defaults to \code{4.09}.
 #'
 #' @returns A tidy dataframe with the requested data from the \acronym{CRU} v. 4.09 repository. If no data are requested, the user
 #' will be prompted to set at least one argument to TRUE.
@@ -26,7 +24,7 @@
 #' @export
 #'
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' # Download data and create a data frame of precipitation and temperature
 #' # without caching the data files
 #' CRU_pre_tmp <- get_cru(pre = TRUE, tmp = TRUE)
@@ -167,9 +165,9 @@ get_cru <- function(tmp = TRUE,
       tunits <- ncdf4::ncatt_get(nc, "time", "units")
       nt     <- dim(time)
 
-      cf         <- CFtime(tunits$value, calendar = "proleptic_gregorian", time)
-      timestamps <- as_timestamp(cf)
-      time_cf    <- parse_timestamps(cf, timestamps)
+      cf         <- CFtime::CFtime(tunits$value, calendar = "proleptic_gregorian", time)
+      timestamps <- CFtime::as_timestamp(cf)
+      time_cf    <- CFtime::parse_timestamps(cf, timestamps)
 
       # Filter to requested year range
       year_mask <- time_cf$year >= start_year & time_cf$year <= end_year

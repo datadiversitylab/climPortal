@@ -1,20 +1,31 @@
 Package: climPortal
 Type: Package
-Title: What the Package Does (Title Case)
+Title: Retrieving and Formatting CRU Climate Data
 Version: 0.1.0
 Authors@R: c(
     person(
-      "Jane", "Doe",
-      email = "jane@example.com",
+      "Nicholas", "Dabagia",
+      email = "dabagia@arizona.edu",
       role = c("aut", "cre")
+    ),
+    person(
+      "Cristian", "Roman",
+      email = "cromanpa@arizona.edu",
+      role = c("aut")
     )
   )
-Description: More about what it does (maybe more than one line).
-    Continuation lines should be indented.
-License: What license is it under?
+Description: Downloads, processes, and formats climate data from the
+    Climatic Research Unit (CRU) Time-Series (TS) v4.09 dataset
+    (Harris et al., 2020). Provides functions to retrieve monthly
+    precipitation, minimum temperature, maximum temperature, and
+    mean temperature data at 0.5 degree resolution for the period
+    1901-2024. Includes tools to convert CRU data to 'terra'
+    SpatRaster objects and to calculate the 19 bioclimatic variables
+    commonly used in species distribution modeling.
+License: MIT + file LICENSE
 Imports: ncdf4, CFtime, R.utils, curl, predicts
 Encoding: UTF-8
 LazyData: true
-URL: https://github.com/dabagia/climPortal
-BugReports: https://github.com/dabagia/climPortal/issues
+URL: https://github.com/datadiversitylab/climPortal
+BugReports: https://github.com/datadiversitylab/climPortal/issues
 RoxygenNote: 7.3.3

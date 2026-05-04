@@ -2,12 +2,15 @@
 % Please edit documentation in R/downscale.R
 \name{downscale}
 \alias{downscale}
-\title{Downscale CRU data}
+\title{downscale() script}
 \usage{
 downscale(x)
 }
 \arguments{
-\item{x}{}
+\item{x}{TBD}
+}
+\value{
+downscaled rasters
 }
 \description{
 Downscale CRU data

@@ -1,14 +1,13 @@
-#downscale() script
+#' downscale() script
+#'
 #' Downscale CRU data
 #'
-#' @param x
+#' @param x TBD
 #'
-#' @returns
+#' @returns downscaled rasters
+#'
 #' @export
-#'
-#' @examples
+
 downscale <- function(x){
   x <- x
 }
-# run document() or command + shift + D to check that the documentation is working properly
-# remember that you need values for @param, @returns, @export, @examples
